@@ -17,7 +17,14 @@ package com.google.codeu.mathlang.impl;
 import java.io.IOException;
 
 import com.google.codeu.mathlang.core.tokens.Token;
+import com.google.codeu.mathlang.core.tokens.NameToken;
+import com.google.codeu.mathlang.core.tokens.NumberToken;
+import com.google.codeu.mathlang.core.tokens.StringToken;
+import com.google.codeu.mathlang.core.tokens.SymbolToken;
 import com.google.codeu.mathlang.parsing.TokenReader;
+
+import java.lang.Character;
+import java.lang.Double;
 
 // MY TOKEN READER
 //
@@ -27,9 +34,98 @@ import com.google.codeu.mathlang.parsing.TokenReader;
 // work with the test of the system.
 public final class MyTokenReader implements TokenReader {
 
+  private final String str;
+  private int ind;
+
   public MyTokenReader(String source) {
     // Your token reader will only be given a string for input. The string will
     // contain the whole source (0 or more lines).
+    str = source;
+    ind = 0;
+  }
+
+  private void moveSpaces() {
+    while (ind < str.length() && Character.isWhitespace(str.charAt(ind))) {
+      ind++;
+    }
+  }
+
+  private boolean isSymbol(char c) {
+    return c == '=' || c == '+' || c == '-' || c == ';';
+  }
+
+  private boolean out() {
+    return ind >= str.length();
+  }
+
+  private boolean isNameCharacter(char c) {
+    return !Character.isWhitespace(c) && !Character.isDigit(c) && c != '\"' && !isSymbol(c);
+  }
+
+  // start with letter
+  private NameToken getName() {
+    int start = ind;
+    while (!out() && isNameCharacter(str.charAt(ind))) {
+      ind++;
+    }
+    String sub = str.substring(start, ind);
+    return sub.length() == 0 ? null : new NameToken(sub);
+  }
+
+  private NumberToken getNumber() throws IOException {
+    int start = ind;
+    while (!out() && Character.isDigit(str.charAt(ind))) {
+      ind++;
+    }
+    if (!out() && str.charAt(ind) == '.') {
+      ind++;
+    }
+    while (!out() && Character.isDigit(str.charAt(ind))) {
+      ind++;
+    }
+
+    String sub = str.substring(start, ind);
+    return sub.length() == 0? null : new NumberToken(Double.parseDouble(sub));
+  }
+
+  private StringToken getString() throws IOException {
+    ind++;
+    int start = ind;
+    while (!out() && str.charAt(ind) != '\"') {
+      if (str.charAt(ind) == '\n') {
+        throw new IOException();
+      }
+      ind++;
+    }
+    if (out()) {
+      return null;
+    }
+    String sub = str.substring(start, ind);
+    ind++;
+    return new StringToken(sub);
+  }
+
+  private SymbolToken getSymbol() {
+    char symbol = str.charAt(ind);
+    ind++;
+    return new SymbolToken(symbol);
+  }
+
+  private Token getToken() throws IOException {
+    char start = str.charAt(ind);
+    Token ans = null;
+    if (Character.isLetter(start)) {
+      ans = getName();
+    } else if (Character.isDigit(start)) {
+      ans = getNumber();
+    } else if (start == '\"') {
+      ans = getString();
+    } else if (isSymbol(start)) {
+      ans = getSymbol();
+    } else {
+      throw new IOException();
+    }
+    return ans;
   }
 
   @Override
@@ -41,6 +137,9 @@ public final class MyTokenReader implements TokenReader {
     // If for any reason you detect an error in the input, you may throw an IOException
     // which will stop all execution.
 
-    return null;
+    moveSpaces();
+    if (out())
+      return null;
+    return getToken();
   }
 }

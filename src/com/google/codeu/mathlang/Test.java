@@ -22,9 +22,54 @@ import com.google.codeu.mathlang.testing.TestCriteria;
 import com.google.codeu.mathlang.testing.TestListener;
 import com.google.codeu.mathlang.testing.Tester;
 
+import com.google.codeu.mathlang.impl.MyTokenReader;
+import com.google.codeu.mathlang.core.tokens.NameToken;
+import com.google.codeu.mathlang.core.tokens.NumberToken;
+import com.google.codeu.mathlang.core.tokens.StringToken;
+import com.google.codeu.mathlang.core.tokens.SymbolToken;
+
+import java.io.IOException;
+
 final class Test {
 
-  public static void main(String[] args) {
+  private static void assertEquals(Object a, Object b) {
+    System.out.println(a.equals(b) ? "   PASS" : "   FAIL");
+  }
+
+  private static void assertNull(Object a) {
+    System.out.println(a == null ? "   PASS" : "   FAIL");
+  }
+
+  private static void assertTests(MyTokenReader reader, Object... values) throws IOException {
+    System.out.println("test...");
+    for (int i = 0; i < values.length; i++) {
+      assertEquals(reader.next(), values[i]);
+    }
+  }
+
+  public static void main(String[] args) throws IOException {
+
+    MyTokenReader reader = new MyTokenReader("print \"hi\"");
+    assertTests(reader, new NameToken("print"), new StringToken("hi"));
+    assertNull(reader.next());
+    assertNull(reader.next());
+
+    reader = new MyTokenReader("   \"comment  1\" hi  \"comment2\"  ");
+    assertTests(reader, new StringToken("comment  1"), new NameToken("hi"), new StringToken("comment2"));
+    assertNull(reader.next());
+    assertNull(reader.next());
+
+    reader = new MyTokenReader("print x=5+67.5  ;  ");
+    assertTests(reader, new NameToken("print"), new NameToken("x"), new SymbolToken('='),
+    new NumberToken(5), new SymbolToken('+'), new NumberToken(67.5), new SymbolToken(';'));
+    assertNull(reader.next());
+    assertNull(reader.next());
+
+    reader = new MyTokenReader(" \n \n    printx=5+67.5  ;  ");
+    assertTests(reader, new NameToken("printx"), new SymbolToken('='),
+    new NumberToken(5), new SymbolToken('+'), new NumberToken(67.5), new SymbolToken(';'));
+    assertNull(reader.next());
+    assertNull(reader.next());
 
     final Tester tester = new Tester(new TestListener() {
 
